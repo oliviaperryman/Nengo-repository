@@ -3,6 +3,7 @@ import numpy as np
 import cPickle
 from nengo_extras.data import load_mnist
 from nengo_extras.vision import Gabor, Mask
+nengo.log('debug')
 
 # --- load the data
 img_rows, img_cols = 28, 28
@@ -30,9 +31,11 @@ labels =[ZERO,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE]
 
 dim =28
 
-label_weights = cPickle.load(open("label_weights.p", "rb"))
-activity_to_img_weights = cPickle.load(open("activity_to_img_weights.p", "rb"))
-rotated_after_encoder_weights =  cPickle.load(open("rotated_after_encoder_weights.p", "rb"))
+label_weights = cPickle.load(open("label_weights1000.p", "rb"))
+activity_to_img_weights = cPickle.load(open("activity_to_img_weights1000.p", "rb"))
+rotated_after_encoder_weights =  cPickle.load(open("rotated_after_encoder_weights1000.p", "r"))
+#rotated_after_encoder_weights_5000 =  cPickle.load(open("rotated_after_encoder_weights_5000.p", "r"))
+rotation_weights = cPickle.load(open("rotation_weights1000.p","rb"))
 
 input_shape = (1,28,28)
 
@@ -64,10 +67,12 @@ def display_func(t, x, input_shape=input_shape):
         </svg>''' % (''.join(img_str))
 
 rng = np.random.RandomState(9)
+n_hid = 1000
+
 
 model = nengo.Network(seed=3)
 with model:
-    stim = nengo.Node(ONE)#lambda t: ONE if t < 0.1 else 0) #nengo.processes.PresentInput(labels,1))#
+    stim = nengo.Node(lambda t: ONE if t < 0.1 else 0) #nengo.processes.PresentInput(labels,1))#
     
     ens_params = dict(
         eval_points=X_train,
@@ -78,16 +83,16 @@ with model:
         
     
     # linear filter used for edge detection as encoders, more plausible for human visual system
-    encoders = Gabor().generate(1000, (11, 11), rng=rng)
+    encoders = Gabor().generate(n_hid, (11, 11), rng=rng)
     encoders = Mask((28, 28)).populate(encoders, rng=rng, flatten=True)
 
 
-    ens = nengo.Ensemble(1000, dim**2, seed=3, encoders=encoders, **ens_params)
+    ens = nengo.Ensemble(n_hid, dim**2, seed=3, encoders=encoders, **ens_params)
     
-    ens2 = nengo.Ensemble(1000, dim**2, seed=3, encoders=encoders, **ens_params)
+    #ens2 = nengo.Ensemble(n_hid, dim**2, seed=3, encoders=encoders, **ens_params)
     
     #nengo.Connection(ens.neurons, ens.neurons, transform = rotated_after_encoder_weights, synapse=0.1)      
-    nengo.Connection(ens.neurons, ens2.neurons, transform = rotated_after_encoder_weights, synapse=0.1)      
+    #nengo.Connection(ens.neurons, ens2.neurons, transform = rotated_after_encoder_weights, synapse=0.1)      
     
     display_node = nengo.Node(display_func, size_in=784)#ens.size_out)
     
@@ -95,7 +100,9 @@ with model:
     
     nengo.Connection(stim, ens, transform = np.dot(label_weights,activity_to_img_weights).T, synapse=0.1)
     
-    nengo.Connection(ens2, display_node, synapse=0.1)
+    nengo.Connection(ens, display_node, synapse=0.1)
+    
+    nengo.Connection(ens.neurons, ens.neurons, transform = rotated_after_encoder_weights.T, synapse=0.2)      
+    #nengo.Connection(ens.neurons, ens2.neurons, transform = rotated_after_encoder_weights.T, synapse=0.1)      
     
 
-    

@@ -30,8 +30,8 @@ labels =[ZERO,ONE,TWO,THREE,FOUR,FIVE,SIX,SEVEN,EIGHT,NINE]
 
 dim =28
 
-label_weights = cPickle.load(open("label_weights.p", "rb"))
-activity_to_img_weights = cPickle.load(open("activity_to_img_weights.p", "rb"))
+label_weights = cPickle.load(open("label_weights1000.p", "rb"))
+activity_to_img_weights = cPickle.load(open("activity_to_img_weights1000.p", "rb"))
 
 input_shape = (1,28,28)
 
